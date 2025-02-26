@@ -1,0 +1,33 @@
+/* ใน AuthLayout.vue หรือ global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Prompt", "Kanit", "Sarabun", sans-serif;
+  font-size: 16px; /* ขนาดฟอนต์เริ่มต้น */
+  line-height: 1.5; /* ระยะบรรทัด */
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* ปิดการเลือกสำหรับ label และข้อความที่ไม่จำเป็น */
+div,
+label,
+.footer-text,
+.subtitle {
+  user-select: none; /* ปิดการเลือก */
+  -webkit-user-select: none; /* รองรับเบราว์เซอร์เก่า */
+  -ms-user-select: none;
+  -moz-user-select: none;
+}
+
+/* ซ่อน Scrollbar สำหรับ Chrome, Safari */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+
