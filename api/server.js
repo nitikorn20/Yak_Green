@@ -20,7 +20,18 @@ console.log("🟢 Loading .env from:", envPath);
 dotenv.config({ path: envPath });
 
 const app = express();
-app.use(cors());
+
+// ✅ ตั้งค่า CORS
+app.use(
+  cors({
+    origin: ["https://yakgreen.farmbird.live", "http://localhost:5000"], // ✅ อนุญาตเฉพาะโดเมนของคุณ
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true, // ✅ อนุญาตส่ง Cookie หรือ Header พิเศษ
+  })
+);
+app.options("*", cors()); // ✅ รองรับ Preflight Request
+
+// ✅ ต้องกำหนด CORS ก่อน `bodyParser`
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // ✅ รองรับ Form Data
 

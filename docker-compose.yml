@@ -25,8 +25,11 @@ services:
     ports:
       - "1883:1883" # MQTT TCP
       - "9001:9001" # MQTT WebSocket (WS)
+      - "8883:8883"  # ✅ WebSocket Secure (WSS)
     volumes:
       - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - /etc/letsencrypt:/etc/letsencrypt # ✅ Mount SSL Certificates
+    
   # ✅ API Service (Node.js)
   api:
     build:
@@ -83,3 +86,5 @@ services:
       - api
 volumes:
   mongodb_data:
+  mosquitto_certs:
+    driver: local

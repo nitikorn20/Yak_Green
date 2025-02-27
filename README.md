@@ -42,9 +42,9 @@ sudo usermod -aG docker $USER
 ## 🔑 3️⃣ ติดตั้ง SSL Certificate ด้วย Certbot
 ```sh
 sudo apt install -y certbot
-sudo certbot certonly --standalone -d yokgreen.farmbird.live
+sudo certbot certonly --standalone -d yakgreen.farmbird.live
 ```
-🔄 Certificate จะถูกเก็บไว้ที่ `/etc/letsencrypt/live/yokgreen.farmbird.live/`
+🔄 Certificate จะถูกเก็บไว้ที่ `/etc/letsencrypt/live/yakgreen.farmbird.live/`
 
 ---
 
@@ -120,7 +120,7 @@ sudo systemctl enable --now docker
 
 ### 🔹 **3️⃣ ขอ SSL Certificate**
 ```sh
-sudo certbot certonly --standalone -d yokgreen.farmbird.live
+sudo certbot certonly --standalone -d yakgreen.farmbird.live
 ```
 
 ### 🔹 **4️⃣ Build Vue และอัปโหลดไฟล์ `dist/` ไปยังเซิร์ฟเวอร์**
@@ -146,8 +146,8 @@ mongodb://MONGO_INITDB_ROOT_USERNAME:MONGO_INITDB_ROOT_PASSWORD@your-server-ip:2
 
 ## 💡 **พร้อมใช้งาน!** 🎉
 ```md
-🔹 **Frontend:**  [https://yokgreen.farmbird.live/](https://yokgreen.farmbird.live/)
-🔹 **API Docs:**  [https://yokgreen.farmbird.live/api-docs/](https://yokgreen.farmbird.live/api-docs/)
+🔹 **Frontend:**  [https://yakgreen.farmbird.live/](https://yakgreen.farmbird.live/)
+🔹 **API Docs:**  [https://yakgreen.farmbird.live/api-docs/](https://yakgreen.farmbird.live/api-docs/)
 🔹 **MQTT:**  Port `1883 (TCP)` / `9001 (WebSocket)`
 🔹 **MongoDB:**  ใช้งานผ่าน MongoDB Compass
 ```

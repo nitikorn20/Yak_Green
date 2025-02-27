@@ -14,7 +14,7 @@ const swaggerOptions = {
         description: 'Development server',
       },
       {
-        url: 'https://api.smartfarm.com',
+        url: 'https://yakgreen.farmbird.live',
         description: 'Production server',
       },
     ],

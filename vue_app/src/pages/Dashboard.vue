@@ -65,7 +65,6 @@ const showModal = ref(false);
 const logs = ref([]);
 const sortBy = ref([]);
 
-const API_BASE_URL = process.env.VITE_BASE_URL || "http://localhost:5000"; // ✅ ตรวจสอบทุกทาง
 
 const headers = [
   { title: "วัน", key: "date", sortable: true },

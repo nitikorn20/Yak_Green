@@ -21,7 +21,7 @@ console.log("✅ Connected to MongoDB");
 
 // ✅ ตั้งค่า MQTT Broker
 const MQTT_BROKER_URL =
-  process.env.MQTT_BROKER_URL || "ws://mqtt-broker:9001/mqtt";
+  process.env.MQTT_BROKER_URL || "wss://yakgreen.farmbird.live:8883/mqtt";
 
 // ✅ เชื่อมต่อ MQTT Broker
 const client = mqtt.connect(MQTT_BROKER_URL);

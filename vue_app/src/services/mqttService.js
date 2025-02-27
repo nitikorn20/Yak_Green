@@ -5,7 +5,7 @@ import { useDeviceStatusStore } from "@/stores/deviceStatusStore";
 import { useDeviceSettingStore } from "@/stores/deviceStoreSetting";
 
 const MQTT_BROKER_URL =
-  process.env.MQTT_BROKER_URL || "ws://localhost:9001/mqtt";
+  process.env.MQTT_BROKER_URL || "wss://yakgreen.farmbird.live:8883/mqtt";
 console.log("🚀 Connecting to MQTT Broker:", MQTT_BROKER_URL);
 let client = null;
 let isConnecting = false;

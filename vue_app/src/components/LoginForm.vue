@@ -104,7 +104,7 @@ const alertTitle = ref("แจ้งเตือน");
 const alertMessage = ref("");
 const isForgotPasswordPopupVisible = ref(false);
 
-const API_BASE_URL = process.env.VITE_BASE_URL || "http://localhost:5000"; // ✅ ตรวจสอบทุกทาง
+const API_BASE_URL = process.env.VITE_BASE_URL || "https://yakgreen.farmbird.live"; // ✅ ตรวจสอบทุกทาง
 
 const togglePasswordVisibility = () => {
   passwordVisible.value = !passwordVisible.value;
