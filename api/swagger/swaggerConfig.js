@@ -1,5 +1,9 @@
 import swaggerJsDoc from 'swagger-jsdoc';
 
+const API_BASE_URL = process.env.NODE_ENV === "production"
+  ? "https://yakgreen.farmbird.live/api"
+  : "http://localhost:5000/api";  // ✅ ใช้ `/api` ให้ตรงกับ Proxy ของ Nginx
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -10,13 +14,9 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Development server',
-      },
-      {
-        url: 'https://yakgreen.farmbird.live',
-        description: 'Production server',
-      },
+        url: API_BASE_URL,
+        description: process.env.NODE_ENV === "production" ? "Production server" : "Development server",
+      }
     ],
     components: {
       securitySchemes: {

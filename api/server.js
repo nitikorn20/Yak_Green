@@ -22,14 +22,19 @@ dotenv.config({ path: envPath });
 const app = express();
 
 // ✅ ตั้งค่า CORS
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://yakgreen.farmbird.live"]
+    : ["http://localhost:5000"];
+
 app.use(
   cors({
-    origin: ["https://yakgreen.farmbird.live", "http://localhost:5000"], // ✅ อนุญาตเฉพาะโดเมนของคุณ
+    origin: allowedOrigins,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true, // ✅ อนุญาตส่ง Cookie หรือ Header พิเศษ
+    credentials: true,
   })
 );
-app.options("*", cors()); // ✅ รองรับ Preflight Request
+app.options("*", cors());
 
 // ✅ ต้องกำหนด CORS ก่อน `bodyParser`
 app.use(bodyParser.json());
@@ -54,8 +59,19 @@ app.use("/api/hardware", hardwareRoutes);
 app.use("/api/device-ownership", deviceOwnershipRoutes);
 app.use("/api/logs", logRoutes);
 
-// เริ่มต้นเซิร์ฟเวอร์
+// ✅ Route เช็คสุขภาพเซิร์ฟเวอร์
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", message: "API is running smoothly!" });
+});
+
+// ✅ เริ่มต้นเซิร์ฟเวอร์
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(
+    `🚀 Server running on ${
+      process.env.NODE_ENV === "production"
+        ? "https://yakgreen.farmbird.live"
+        : `http://localhost:${PORT}`
+    }`
+  );
+});

@@ -11,9 +11,6 @@ export default defineConfig(({ mode }) => {
   // ✅ Debug: ตรวจสอบค่าที่โหลดมา
   console.log("🟢 API Base URL:", env.VITE_BASE_URL || "❌ NOT SET");
 
-  // ✅ ถ้า VITE_BASE_URL ไม่มีค่า ให้ตั้งค่าดีฟอลต์
-  const apiBaseUrl = env.VITE_BASE_URL;
-
   return {
     plugins: [vue(), vueDevTools()],
     define: {
@@ -28,7 +25,7 @@ export default defineConfig(({ mode }) => {
     server: {
       server: {
         proxy: {
-          "/api": env.VITE_API_BASE_URL || "http://localhost:5000",
+          "/api": "https://yakgreen.farmbird.live",
         },
       },
     },

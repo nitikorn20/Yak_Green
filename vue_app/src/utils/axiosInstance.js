@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // ✅ โหลดค่า BASE_URL จาก .env หรือใช้ default
-const API_BASE_URL = process.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = "https://yakgreen.farmbird.live";
 
 
 // ✅ สร้าง instance ของ axios

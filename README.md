@@ -40,12 +40,21 @@ sudo usermod -aG docker $USER
 ---
 
 ## 🔑 3️⃣ ติดตั้ง SSL Certificate ด้วย Certbot
+🔨 ติดตั้ง Certbot
 ```sh
 sudo apt install -y certbot
+```
+🔒 ขอ SSL Certificate ใหม่ Certbot
+```sh
 sudo certbot certonly --standalone -d yakgreen.farmbird.live
 ```
 🔄 Certificate จะถูกเก็บไว้ที่ `/etc/letsencrypt/live/yakgreen.farmbird.live/`
 
+⚠️ เพิ่มสิทธิ์ให้ Certbot เพื่อแน่ให้ Mosquitto และ Nginx เข้าถึงได้
+```sh
+sudo chmod -R 755 /etc/letsencrypt/live /etc/letsencrypt/archive
+sudo chmod 644 /etc/letsencrypt/archive/yakgreen.farmbird.live/*
+```
 ---
 
 ## 🏗 4️⃣ เตรียม Vue Web App
@@ -103,52 +112,11 @@ mongodb://MONGO_INITDB_ROOT_USERNAME:MONGO_INITDB_ROOT_PASSWORD@your-server-ip:2
 📌 เปลี่ยน `your-server-ip` เป็น **IP ของเซิร์ฟเวอร์จริง**
 
 ---
-
-## 🎯 **สรุปขั้นตอนการ Deploy**
-### 🔹 **1️⃣ ตั้งค่าเซิร์ฟเวอร์ Digital Ocean**
-- ใช้ Ubuntu 22.04 LTS
-- ติดตั้งแพ็กเกจพื้นฐาน
-```sh
-sudo apt update && sudo apt upgrade -y
-```
-
-### 🔹 **2️⃣ ติดตั้ง Docker และ Certbot**
-```sh
-sudo apt install -y docker.io docker-compose certbot
-sudo systemctl enable --now docker
-```
-
-### 🔹 **3️⃣ ขอ SSL Certificate**
-```sh
-sudo certbot certonly --standalone -d yakgreen.farmbird.live
-```
-
-### 🔹 **4️⃣ Build Vue และอัปโหลดไฟล์ `dist/` ไปยังเซิร์ฟเวอร์**
-```sh
-cd vue_app
-npm install
-npm run build
-scp -r vue_app/dist deploy@your-server-ip:/home/deploy/Yak_Green/vue_app/
-```
-
-### 🔹 **5️⃣ รัน Docker Compose**
-```sh
-docker-compose up -d --build
-```
-
-### 🔹 **6️⃣ ใช้ MongoDB Compass เพื่อตรวจสอบ Database**
-🔗 **Connection URI**
-```
-mongodb://MONGO_INITDB_ROOT_USERNAME:MONGO_INITDB_ROOT_PASSWORD@your-server-ip:27017/?authSource=admin
-```
-
----
-
 ## 💡 **พร้อมใช้งาน!** 🎉
 ```md
 🔹 **Frontend:**  [https://yakgreen.farmbird.live/](https://yakgreen.farmbird.live/)
 🔹 **API Docs:**  [https://yakgreen.farmbird.live/api-docs/](https://yakgreen.farmbird.live/api-docs/)
-🔹 **MQTT:**  Port `1883 (TCP)` / `9001 (WebSocket)`
+🔹 **MQTT:**  Port `1883 (TCP)` / `9001 (WebSocket)` / `8883 (WSS)`
 🔹 **MongoDB:**  ใช้งานผ่าน MongoDB Compass
 ```
 🚀 **เพียงทำตามขั้นตอนเหล่านี้ ระบบจะพร้อมใช้งานได้ทันที!** 😊

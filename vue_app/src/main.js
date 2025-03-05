@@ -9,7 +9,7 @@ import { createVuetify } from "vuetify";
 import "vuetify/styles";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
-//import "@/utils/log"; // ✅ ปิด log ใน Production
+import "@/utils/log"; // ✅ ปิด log ใน Production
 
 // ✅ Import Material Design Icons (MDI)
 import "@mdi/font/css/materialdesignicons.css";

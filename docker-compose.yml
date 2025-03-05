@@ -1,3 +1,5 @@
+version: "3.8" # ✅ เพิ่ม version ของ Docker Compose เพื่อรองรับฟีเจอร์ใหม่
+
 services:
   # ✅ MongoDB Database
   mongodb:
@@ -17,6 +19,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   # ✅ MQTT Broker (Mosquitto)
   mqtt-broker:
     image: eclipse-mosquitto:latest
@@ -25,11 +28,11 @@ services:
     ports:
       - "1883:1883" # MQTT TCP
       - "9001:9001" # MQTT WebSocket (WS)
-      - "8883:8883"  # ✅ WebSocket Secure (WSS)
+      - "8883:8883" # ✅ WebSocket Secure (WSS)
     volumes:
       - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - /etc/letsencrypt:/etc/letsencrypt # ✅ Mount SSL Certificates
-    
+
   # ✅ API Service (Node.js)
   api:
     build:
@@ -37,17 +40,19 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000" # ✅ ใช้ `expose` แทน `ports` เพื่อไม่เปิด API สู่ภายนอก
     depends_on:
       mongodb:
         condition: service_healthy
       mqtt-broker:
         condition: service_started
     restart: always
+    environment:
+      - NODE_ENV=production # ✅ ตั้งค่า Production Mode
     command: ["node", "server.js"] # ✅ รัน API อย่างเดียว
 
-    # ✅ MQTT Service (Node.js)
+  # ✅ MQTT Service (Node.js)
   mqtt-service:
     build:
       context: ./api
@@ -60,6 +65,7 @@ services:
     restart: always
     hostname: mqtt-service # ✅ ป้องกัน client ID ซ้ำ
     command: ["node", "mqttService.js"]
+
   # ✅ Vue.js Web App
   vue_app:
     build:
@@ -70,20 +76,22 @@ services:
     depends_on:
       - api
     restart: "no" # ✅ สร้าง Web App เสร็จแล้วหยุดทันที เพราะให้ Nginx ทำหน้าที่แทน
+
   # ✅ Nginx Reverse Proxy
   nginx:
     image: nginx:latest
     container_name: nginx
     restart: always
     ports:
-      - "80:80" # ✅ เปลี่ยนจาก "80:80" เป็น "8080:80" เพื่อให้เข้าได้ผ่าน http://localhost:8080
-      - "443:443" # เพิ่มถ้าคุณตั้งค่า SSL ใน Dockerfile
+      - "80:80" # ✅ ใช้เป็น Reverse Proxy
+      - "443:443" # ✅ ใช้สำหรับ SSL
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./vue_app/dist:/usr/share/nginx/html
-      - /etc/letsencrypt:/etc/letsencrypt # เพิ่มถ้าคุณตั้งค่า SSL ใน Dockerfile
+      - /etc/letsencrypt:/etc/letsencrypt # ✅ Mount SSL Certificates
     depends_on:
       - api
+
 volumes:
   mongodb_data:
   mosquitto_certs:

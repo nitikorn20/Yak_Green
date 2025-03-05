@@ -50,11 +50,11 @@
       Email กับ Password ที่ใช้งานได้จะได้รับจากผู้ดูแลระบบ <br />
       สำหรับผู้ที่สนใจใช้งานระบบ กรุณาติดต่อผ่านทาง
       <a
-        href="https://www.yakgreen.com"
+        href="https://yakgreen.farmbird.live/"
         target="_blank"
         rel="noopener noreferrer"
       >
-        www.yakgreen.com
+        https://yakgreen.farmbird.live/
       </a>
     </p>
 
@@ -104,7 +104,8 @@ const alertTitle = ref("แจ้งเตือน");
 const alertMessage = ref("");
 const isForgotPasswordPopupVisible = ref(false);
 
-const API_BASE_URL = process.env.VITE_BASE_URL || "https://yakgreen.farmbird.live"; // ✅ ตรวจสอบทุกทาง
+const API_BASE_URL =
+  process.env.VITE_BASE_URL || "https://yakgreen.farmbird.live"; // ✅ ตรวจสอบทุกทาง
 
 const togglePasswordVisibility = () => {
   passwordVisible.value = !passwordVisible.value;
@@ -112,10 +113,13 @@ const togglePasswordVisibility = () => {
 
 const handleLogin = async () => {
   try {
-    const response = await axiosInstance.post(`${API_BASE_URL}/api/auth/login`, {
-      email: email.value,
-      password: password.value,
-    });
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/api/auth/login`,
+      {
+        email: email.value,
+        password: password.value,
+      }
+    );
 
     if (response.data.token) {
       authStore.setUser({
