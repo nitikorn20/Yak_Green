@@ -39,14 +39,14 @@ sudo usermod -aG docker $USER
 
 ---
 
-## 🔑 3️⃣ ติดตั้ง SSL Certificate ด้วย Certbot
-🔨 ติดตั้ง Certbot
+## 🔐 3️⃣ ติดตั้ง SSL Certificate ด้วย Certbot (Webroot + Docker)
+🧰 ติดตั้ง Certbot บน Host OS
 ```sh
 sudo apt install -y certbot
 ```
-🔒 ขอ SSL Certificate ใหม่ Certbot
+🔒 ขอใบรับรอง Let's Encrypt ด้วย Webroot ผ่าน Docker
 ```sh
-sudo certbot certonly --standalone -d yakgreen.farmbird.live
+docker-compose run --rm certbot certonly --webroot -w /var/www/html -d yakgreen.farmbird.live
 ```
 🔄 Certificate จะถูกเก็บไว้ที่ `/etc/letsencrypt/live/yakgreen.farmbird.live/`
 
@@ -104,14 +104,64 @@ docker-compose down -v
 
 ---
 
-## 🔍 7️⃣ ใช้ MongoDB Compass เพื่อตรวจสอบ Database
-### 🔗 Connection URI
-```
-mongodb://MONGO_INITDB_ROOT_USERNAME:MONGO_INITDB_ROOT_PASSWORD@your-server-ip:27017/?authSource=admin
-```
-📌 เปลี่ยน `your-server-ip` เป็น **IP ของเซิร์ฟเวอร์จริง**
+## 🔐 7️⃣ ใช้งาน MongoDB Compass อย่างปลอดภัย (SSH Tunnel + Private Key)
+
+> เพื่อความปลอดภัย ไม่ควรเปิดพอร์ต MongoDB สู่ public internet  
+> ให้ใช้การเชื่อมต่อแบบ **SSH Tunnel + Key File (.pem/.ppk)** แทน
+
+### 🧩 ตัวอย่างการตั้งค่า MongoDB Compass:
+
+| Field                   | ค่า / คำอธิบาย                          |
+| ----------------------- | ------------------------------------ |
+| SSH Hostname            | `your-server-ip`                     |
+| SSH Username            | `deploy` (หรือชื่อผู้ใช้บนเซิร์ฟเวอร์ของคุณ)   |
+| SSH Identity File       | ไฟล์ `.pem` หรือ `.ppk` สำหรับเชื่อมต่อ SSH |
+| MongoDB Hostname        | `127.0.0.1`                          |
+| MongoDB Port            | `27017`                              |
+| Authentication Database | `admin`                              |
+| Username                | `${MONGO_INITDB_ROOT_USERNAME}`      |
+| Password                | `${MONGO_INITDB_ROOT_PASSWORD}`      |
+
+✅ ไม่จำเป็นต้องเปิดพอร์ต 27017 จาก firewall/public → ปลอดภัยกว่า
 
 ---
+
+## 🔁 8️⃣ ตั้ง Cron Job สำหรับ Certbot (ต่ออายุ SSL อัตโนมัติ)
+
+> ใช้ `cron` จาก **host OS** เพื่อควบคุมการต่ออายุใบรับรอง Let's Encrypt อย่างเสถียร
+> ดีกว่ารัน certbot แบบ loop ภายใน container
+
+### 🛠 ขั้นตอนการตั้งค่า:
+
+1. เปิด Crontab:
+
+   ```bash
+   crontab -e
+   ```
+
+2. เพิ่มบรรทั้งนี้ (เปลี่ยน path ให้ตรงกับตำแหน่งโปรเจกต์ของคุณ):
+
+   ```cron
+   0 3 * * * cd /home/deploy/Yak_Green && docker-compose run --rm certbot renew --webroot -w /var/www/html && docker exec nginx nginx -s reload
+   ```
+
+### ✅ คำสั่งนี้จะ:
+
+* ตรวจสอบใบรับ SSL ทุกวันตอนตี 3
+* หากเริยกว่าสามเป็นเวลาต่ออายุ → Certbot จะ renew cert ให้
+* แล้ว reload nginx เพื่อใส่ cert ใบใหม่
+
+### 🔍 ทดสอบ้วยตนเอง:
+
+```bash
+cd /home/deploy/Yak_Green
+docker-compose run --rm certbot renew --webroot -w /var/www/html
+docker exec nginx nginx -s reload
+```
+
+📃 หากไม่พบการต่อ cert ลองเบบ manual แล้ว cron จะต่ออายุให้เบ็บอัตโนมัติได้อัตโมมัติ ✅
+
+
 ## 💡 **พร้อมใช้งาน!** 🎉
 ```md
 🔹 **Frontend:**  [https://yakgreen.farmbird.live/](https://yakgreen.farmbird.live/)
