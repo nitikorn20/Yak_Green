@@ -188,6 +188,95 @@ const selectedDays = ref(Array(7).fill(0));
 const isLoading = ref(false); // ✅ ใช้ควบคุม Fullscreen Loading
 const timeoutRef = ref(null); // ✅ ใช้จับ Timeout ของ MQTT
 
+const MAX_PER_VALVE_MIN = 60; // จำกัดต่อวาล์ว
+function normMin(x) {
+  return ((x % 1440) + 1440) % 1440;
+}
+
+function nextDayIdx(d) {
+  return (d + 1) % 7;
+}
+// แตกช่วงเวลาให้เป็น 1 หรือ 2 ช่วงในวันเดียว (ถ้า wrap)
+function expandDayRange(startMin, endMin) {
+  startMin = normMin(startMin);
+  endMin = normMin(endMin);
+  if (startMin < endMin) return [[startMin, endMin]];
+  return [
+    [startMin, 1440],
+    [0, endMin],
+  ]; // wrap ข้ามวัน
+}
+
+// a = [aS,aE), b = [bS,bE) ทับซ้อน?
+function rangesOverlap(aS, aE, bS, bE) {
+  return !(aE < bS || bE < aS);
+}
+
+/**
+ * หาโปรแกรมที่ทับซ้อน (รองรับข้ามวัน):
+ * คืนค่า null = ไม่ทับซ้อน
+ * หรือ {withIndex:number, day:number} โดย day = 0..6 (อา..ส)
+ */
+function findOverlapWithExisting(
+  startTime,
+  totalDuration,
+  daysMask,
+  excludeIndex
+) {
+  const all = deviceSettingStore.getProgramSettings();
+  const endTime = startTime + totalDuration;
+  const wraps = endTime > 1440;
+  const nextPart = wraps ? normMin(endTime) : -1;
+
+  for (const p of all) {
+    if (p.index === excludeIndex) continue;
+
+    const pStart = parseInt(p.hh) * 60 + parseInt(p.mm);
+    const pDur = parseInt(p.duration) * parseInt(p.valves.length);
+    const pEnd = pStart + pDur;
+    const pWrap = pEnd > 1440;
+    const pNext = pWrap ? normMin(pEnd) : -1;
+
+    for (let d = 0; d < 7; d++) {
+      const ourStartDay = !!(daysMask & (1 << d));
+      const theirStartDay = !!(p.days & (1 << d));
+      const theirNextDay = !!(p.days & (1 << (d + 1) % 7));
+
+      // กรณีเริ่มวันเดียวกัน
+      if (ourStartDay && theirStartDay) {
+        const A = expandDayRange(startTime, normMin(endTime));
+        const B = expandDayRange(pStart, normMin(pEnd));
+        for (const [aS, aE] of A)
+          for (const [bS, bE] of B)
+            if (rangesOverlap(aS, aE, bS, bE))
+              return { withIndex: p.index, day: d };
+      }
+
+      // ส่วนที่ “เรา” ลากไปวันถัดไป เปรียบเทียบกับการเริ่มของ “เขา” ในวันถัดไป
+      if (ourStartDay && wraps && theirNextDay) {
+        const A2 = [[0, nextPart]]; // ส่วนของวันถัดไปของเรา
+        const B2 = expandDayRange(pStart, normMin(pEnd)); // การเริ่มของเขาในวันถัดไป
+        for (const [aS, aE] of A2)
+          for (const [bS, bE] of B2)
+            if (rangesOverlap(aS, aE, bS, bE))
+              return { withIndex: p.index, day: (d + 1) % 7 };
+      }
+
+      // ส่วนที่ “เขา” ลากไปวันถัดไป เปรียบเทียบกับการเริ่มของ “เรา” ในวันถัดไป
+      if (theirStartDay && pWrap) {
+        // หมายเหตุ: เราไม่ต้องมีบิตวันถัดไป ก็ยังโดนชนได้เพราะช่วงเวลาลาก
+        const A3 = expandDayRange(startTime, normMin(endTime));
+        const B3 = [[0, pNext]];
+        for (const [aS, aE] of A3)
+          for (const [bS, bE] of B3)
+            if (rangesOverlap(aS, aE, bS, bE))
+              return { withIndex: p.index, day: (d + 1) % 7 };
+      }
+    }
+  }
+  return null;
+}
+
 const snackbar = ref({
   show: false,
   text: "",
@@ -363,81 +452,67 @@ const saveProgram = async () => {
     return;
   }
 
-  // ✅ คำนวณเวลารดน้ำเป็น "นาทีทั้งหมด"
+  // ✅ NEW: คำนวณเวลาเริ่ม / รวม และตรวจทับซ้อนแบบรองรับข้ามคืน
   const startTime =
     parseInt(editData.value.hh) * 60 + parseInt(editData.value.mm);
-  const duration =
-    parseInt(editData.value.duration) * parseInt(editData.value.valves.length);
 
-  // ✅ ตรวจสอบค่าที่ได้ เพื่อป้องกันค่าผิดปกติ
-  if (duration <= 0 || duration > 60) {
-    // 1440 นาที = 24 ชม.
-    console.error("❌ คำนวณ duration ผิดพลาด:", duration);
+  const perValve = parseInt(editData.value.duration, 10); // นาทีต่อตัว
+  const valvesCount = parseInt(editData.value.valves.length, 10);
+  const totalDuration = perValve * valvesCount; // รวมทั้งโปรแกรม
+
+  // ✅ จำกัดเวลาต่อวาล์ว (1–60 นาที) — รวมโปรแกรม “ไม่จำกัด” (ปล่อยตามความต้องการผู้ใช้)
+  if (isNaN(perValve) || perValve <= 0 || perValve > MAX_PER_VALVE_MIN) {
     snackbar.value = {
       show: true,
       title: "แจ้งเตือน",
-      text: "❌ ระยะเวลารดน้ำรวมต้องอยู่ในช่วง 1-60 นาที",
+      text: `❌ ระยะเวลาต่อวาล์วต้องอยู่ในช่วง 1–${MAX_PER_VALVE_MIN} นาที`,
     };
-
     return;
   }
 
-  const endTime = startTime + duration; // เวลาสิ้นสุดเป็นนาที
+  const endTime = startTime + totalDuration;
+  console.log(`⏳ ${startTime} → ${endTime} นาที (รวม ${totalDuration} นาที)`);
 
-  console.log(`⏳ คำนวณเวลา: ${startTime} → ${endTime} นาที`);
+  // ✅ บังคับถ้าล้ำวัน ต้องมีวันถัดไป
+  const wraps = endTime >= 1440; // ใช้ >= เพื่อครอบคลุมกรณีจบตรง 24:00 ด้วย
+  if (wraps) {
+    const days = parseInt(editData.value.days, 10);
 
-  // ✅ ตรวจสอบว่าเวลาไม่คาบเกี่ยวกับโปรแกรมอื่น
-  const allPrograms = deviceSettingStore.getProgramSettings(); // โหลดโปรแกรมทั้งหมด
-  console.log(
-    `📌 ตรวจสอบการซ้อนทับกับ ${allPrograms.length} โปรแกรมที่มีอยู่...`
-  );
+    for (let d = 0; d < 7; d++) {
+      const pickedToday = ((days >> d) & 1) === 1;
+      if (!pickedToday) continue;
 
-  for (const program of allPrograms) {
-    if (program.index === programIndex.value) continue; // ข้ามโปรแกรมที่กำลังแก้ไข
+      const needDay = (d + 1) % 7;
+      const hasNextDay = ((days >> needDay) & 1) === 1;
 
-    // ✅ คำนวณช่วงเวลาของโปรแกรมที่มีอยู่ (เป็นนาทีทั้งหมด)
-    const programStartTime = parseInt(program.hh) * 60 + parseInt(program.mm);
-    const programEndTime =
-      programStartTime +
-      parseInt(program.duration) * parseInt(program.valves.length);
-
-    console.log(
-      `🔄 ตรวจสอบกับ Program ${program.index + 1}: ${programStartTime} → ${programEndTime} นาที`
-    );
-
-    // ✅ ตรวจสอบว่ามีวันรดน้ำตรงกันหรือไม่
-    const hasCommonDays = (editData.value.days & program.days) !== 0; // ใช้ bitwise & เพื่อตรวจสอบวันซ้อนกัน
-    console.log(
-      "📅 มีวันรดน้ำที่ซ้อนกัน:",
-      hasCommonDays ? "✅ ใช่" : "❌ ไม่"
-    );
-
-    if (hasCommonDays) {
-      // ✅ ตรวจสอบว่าช่วงเวลาคาบเกี่ยวกันหรือไม่
-      const isOverlapping =
-        (startTime >= programStartTime && startTime < programEndTime) || // โปรแกรมใหม่เริ่มในช่วงที่มีอยู่
-        (endTime > programStartTime && endTime <= programEndTime) || // โปรแกรมใหม่จบในช่วงที่มีอยู่
-        (startTime <= programStartTime && endTime >= programEndTime) || // โปรแกรมใหม่ครอบคลุมโปรแกรมเดิม
-        startTime === programEndTime ||
-        endTime === programStartTime; // ⛔ ห้ามชนกับเวลาเริ่ม/จบของโปรแกรมอื่น
-
-      console.log(
-        "🔍 มีการคาบเกี่ยวของเวลา:",
-        isOverlapping ? "❌ ใช่" : "✅ ไม่"
-      );
-
-      if (isOverlapping) {
-        console.log(
-          `❌ เวลารดน้ำของโปรแกรมใหม่คาบเกี่ยวกับ Program ${program.index + 1}`
-        );
+      if (!hasNextDay) {
         snackbar.value = {
           show: true,
           title: "แจ้งเตือน",
-          text: `❌ การรดน้ำของโปรแกรมที่กำลังแก้ไขซ้อนทับกับโปรแกรม Program ${program.index + 1} จึงไม่สามารถบันทึกได้`,
+          text: `❌ โปรแกรมนี้ล้ำเข้า "${daysMap[needDay]}". กรุณาเลือกวัน ${daysMap[needDay]} เพิ่ม หรือปรับเวลา/ระยะให้ไม่ล้ำวัน`,
         };
         return;
       }
     }
+  }
+
+  // ✅ ตรวจซ้อนทับ (คืนค่าโปรแกรมที่ชน + วัน)
+  const overlap = findOverlapWithExisting(
+    startTime,
+    totalDuration,
+    parseInt(editData.value.days, 10),
+    programIndex.value
+  );
+
+  if (overlap) {
+    const humanProg = overlap.withIndex + 1; // 1-based
+    const dayLabel = daysMap[overlap.day] ?? `วัน ${overlap.day}`;
+    snackbar.value = {
+      show: true,
+      title: "แจ้งเตือน",
+      text: `❌ ซ้อนทับกับ Program ${humanProg} (${dayLabel}) — กรุณาเปลี่ยนเวลา`,
+    };
+    return;
   }
 
   // ✅ เพิ่ม popup ยืนยัน

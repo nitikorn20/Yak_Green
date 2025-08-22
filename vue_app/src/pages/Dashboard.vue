@@ -28,23 +28,36 @@
         <v-card-title class="log-title">บันทึกการรดน้ำ</v-card-title>
         <v-divider></v-divider>
         <v-card-text>
+          <div v-if="!logs.length">
+            <v-alert type="info" variant="tonal" class="ma-4">
+              ไม่พบข้อมูลบันทึกของอุปกรณ์นี้ในช่วง 90 วันล่าสุด
+            </v-alert>
+          </div>
+
           <v-data-table
+            v-else
             v-model:sort-by="sortBy"
             :headers="headers"
             :items="logs"
             class="custom-table elevation-2"
             dense
-          >
-          </v-data-table>
+          />
         </v-card-text>
         <v-divider></v-divider>
         <v-card-actions class="dialog-actions">
-          <v-btn @click="exportCSV" color="success" variant="outlined"
-            >Save CSV</v-btn
+          <!-- ✅ ปุ่มจะ disable ถ้า logs ว่าง -->
+          <v-btn
+            @click="exportCSV"
+            color="success"
+            variant="outlined"
+            :disabled="!logs.length"
           >
-          <v-btn @click="showModal = false" color="red" variant="outlined"
-            >ปิด</v-btn
-          >
+            Save CSV
+          </v-btn>
+
+          <v-btn @click="showModal = false" color="red" variant="outlined">
+            ปิด
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -64,7 +77,6 @@ const deviceStatusStore = useDeviceStatusStore();
 const showModal = ref(false);
 const logs = ref([]);
 const sortBy = ref([]);
-
 
 const headers = [
   { title: "วัน", key: "date", sortable: true },
@@ -88,7 +100,6 @@ const onlineDevice = computed(() => {
 
 const fetchLogs = async () => {
   try {
-
     const serialNumber = deviceStore.devices[0].serialNumber;
     if (!serialNumber) {
       console.error("No serial number found for the device");
@@ -101,11 +112,14 @@ const fetchLogs = async () => {
     }
 
     console.log(`Fetching logs for serialNumber: ${serialNumber}`);
-    const response = await axiosInstance.get(`/api/logs/${serialNumber}/grouped`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axiosInstance.get(
+      `/api/logs/${serialNumber}/grouped`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     logs.value = response.data;
     showModal.value = true;
@@ -114,6 +128,11 @@ const fetchLogs = async () => {
     if (error.response) {
       console.error("Response Data:", error.response.data);
       console.error("Response Status:", error.response.status);
+    }
+    if (error.response?.status === 404) {
+      logs.value = []; // เคลียร์ให้ว่าง → จะโชว์ v-alert
+      showModal.value = true; // เปิด modal ให้เห็นข้อความ
+      return;
     }
   }
 };

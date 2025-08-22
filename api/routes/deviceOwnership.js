@@ -1,11 +1,11 @@
-import express from 'express'
-import DeviceOwnership from '../models/DeviceOwnership.js'
-import User from '../models/User.js'
-import Hardware from '../models/Hardware.js'
-import verifyToken from '../middlewares/verifyToken.js'
-import verifySuperAdmin from '../middlewares/verifySuperAdmin.js'
+import express from "express";
+import DeviceOwnership from "../models/DeviceOwnership.js";
+import User from "../models/User.js";
+import Hardware from "../models/Hardware.js";
+import verifyToken from "../middlewares/verifyToken.js";
+import verifySuperAdmin from "../middlewares/verifySuperAdmin.js";
 
-const router = express.Router()
+const router = express.Router();
 
 /**
  * @swagger
@@ -16,7 +16,7 @@ const router = express.Router()
 
 /**
  * @swagger
- * /api/device-ownership:
+ * /device-ownership:
  *   get:
  *     summary: Get all assigned devices (Super Admin Only)
  *     tags: [DeviceOwnership]
@@ -43,20 +43,20 @@ const router = express.Router()
  *       500:
  *         description: Failed to retrieve devices
  */
-router.get('/', verifyToken, verifySuperAdmin, async (req, res) => {
+router.get("/", verifyToken, verifySuperAdmin, async (req, res) => {
   try {
     const devices = await DeviceOwnership.find()
-      .populate('user', 'email')
-      .populate('hardware', 'serialNumber')
-    res.status(200).json(devices)
+      .populate("user", "email")
+      .populate("hardware", "serialNumber");
+    res.status(200).json(devices);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve devices' })
+    res.status(500).json({ error: "Failed to retrieve devices" });
   }
-})
+});
 
 /**
  * @swagger
- * /api/device-ownership/assign:
+ * /device-ownership/assign:
  *   post:
  *     summary: Assign a hardware device to a user (Super Admin Only)
  *     tags: [DeviceOwnership]
@@ -85,31 +85,41 @@ router.get('/', verifyToken, verifySuperAdmin, async (req, res) => {
  *       500:
  *         description: Failed to assign device
  */
-router.post('/assign', verifyToken, verifySuperAdmin, async (req, res) => {
-  const { userEmail, hardwareSerial } = req.body
+router.post("/assign", verifyToken, verifySuperAdmin, async (req, res) => {
+  const { userEmail, hardwareSerial } = req.body;
 
   try {
-    const user = await User.findOne({ email: userEmail })
-    if (!user) return res.status(400).json({ error: 'User not found' })
+    const user = await User.findOne({ email: userEmail });
+    if (!user) return res.status(400).json({ error: "User not found" });
 
-    const hardware = await Hardware.findOne({ serialNumber: hardwareSerial })
-    if (!hardware) return res.status(400).json({ error: 'Hardware not found' })
+    const hardware = await Hardware.findOne({ serialNumber: hardwareSerial });
+    if (!hardware) return res.status(400).json({ error: "Hardware not found" });
 
-    const existingOwnership = await DeviceOwnership.findOne({ hardware: hardware._id })
-    if (existingOwnership) return res.status(400).json({ error: 'Device already assigned' })
+    const existingOwnership = await DeviceOwnership.findOne({
+      user: user._id,
+      hardware: hardware._id,
+    });
 
-    const ownership = new DeviceOwnership({ user: user._id, hardware: hardware._id })
-    await ownership.save()
+    if (existingOwnership) {
+      return res
+        .status(400)
+        .json({ error: "This user already owns this device" });
+    }
+    const ownership = new DeviceOwnership({
+      user: user._id,
+      hardware: hardware._id,
+    });
+    await ownership.save();
 
-    res.status(201).json({ message: 'Device assigned successfully' })
+    res.status(201).json({ message: "Device assigned successfully" });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to assign device' })
+    res.status(500).json({ error: "Failed to assign device" });
   }
-})
+});
 
 /**
  * @swagger
- * /api/device-ownership/unassign/{hardwareSerial}:
+ * /device-ownership/unassign/{hardwareSerial}:
  *   delete:
  *     summary: Unassign a hardware device from a user (Super Admin Only)
  *     tags: [DeviceOwnership]
@@ -132,23 +142,34 @@ router.post('/assign', verifyToken, verifySuperAdmin, async (req, res) => {
  *       500:
  *         description: Failed to unassign device
  */
-router.delete('/unassign/:hardwareSerial', verifyToken, verifySuperAdmin, async (req, res) => {
-  try {
-    const hardware = await Hardware.findOne({ serialNumber: req.params.hardwareSerial })
-    if (!hardware) return res.status(404).json({ error: 'Hardware not found' })
+router.delete(
+  "/unassign/:hardwareSerial",
+  verifyToken,
+  verifySuperAdmin,
+  async (req, res) => {
+    try {
+      const hardware = await Hardware.findOne({
+        serialNumber: req.params.hardwareSerial,
+      });
+      if (!hardware)
+        return res.status(404).json({ error: "Hardware not found" });
 
-    const ownership = await DeviceOwnership.findOneAndDelete({ hardware: hardware._id })
-    if (!ownership) return res.status(404).json({ error: 'Device not assigned' })
+      const ownership = await DeviceOwnership.findOneAndDelete({
+        hardware: hardware._id,
+      });
+      if (!ownership)
+        return res.status(404).json({ error: "Device not assigned" });
 
-    res.status(200).json({ message: 'Device unassigned successfully' })
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to unassign device' })
+      res.status(200).json({ message: "Device unassigned successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unassign device" });
+    }
   }
-})
+);
 
 /**
  * @swagger
- * /api/device-ownership/user/{userEmail}:
+ * /device-ownership/user/{userEmail}:
  *   get:
  *     summary: Get all devices assigned to a user
  *     tags: [DeviceOwnership]
@@ -187,26 +208,96 @@ router.delete('/unassign/:hardwareSerial', verifyToken, verifySuperAdmin, async 
  *         description: Failed to retrieve devices
  */
 
-router.get('/user/:userEmail', verifyToken, async (req, res) => {
+router.get("/user/:userEmail", verifyToken, async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.params.userEmail })
-    if (!user) return res.status(404).json({ error: 'User not found' })
+    const user = await User.findOne({ email: req.params.userEmail });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    const devices = await DeviceOwnership.find({ user: user._id }).populate('hardware', 'serialNumber')
+    const devices = await DeviceOwnership.find({ user: user._id }).populate(
+      "hardware",
+      "serialNumber"
+    );
 
-    if (!devices.length) return res.status(404).json({ error: 'No devices found for this user' })
+    if (!devices.length)
+      return res.status(404).json({ error: "No devices found for this user" });
 
     // ✅ ส่งข้อมูลกลับเป็น Array ถูกต้อง
     res.status(200).json(
-      devices.map(device => ({
+      devices.map((device) => ({
         hardwareId: device.hardware._id,
         serialNumber: device.hardware.serialNumber,
         assignedAt: device.assignedAt,
       }))
-    )
+    );
   } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve devices' })
+    res.status(500).json({ error: "Failed to retrieve devices" });
   }
-})
+});
 
-export default router
+/**
+ * @swagger
+ * /device-ownership/unassign/{hardwareSerial}/{userEmail}:
+ *   delete:
+ *     summary: Unassign a user from a hardware
+ *     tags: [DeviceOwnership]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hardwareSerial
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: userEmail
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Device unassigned for this user successfully
+ *       404:
+ *         description: Hardware/User/Ownership not found
+ *       500:
+ *         description: Failed to unassign device for this user
+ */
+
+router.delete(
+  "/unassign/:hardwareSerial/:userEmail",
+  verifyToken,
+  verifySuperAdmin,
+  async (req, res) => {
+    const { hardwareSerial, userEmail } = req.params;
+    try {
+      const hardware = await Hardware.findOne({ serialNumber: hardwareSerial });
+      if (!hardware) {
+        return res.status(404).json({ error: "Hardware not found" });
+      }
+
+      const user = await User.findOne({ email: userEmail });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const ownership = await DeviceOwnership.findOneAndDelete({
+        user: user._id,
+        hardware: hardware._id,
+      });
+
+      if (!ownership) {
+        return res.status(404).json({ error: "Ownership not found" });
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Device unassigned for this user successfully" });
+    } catch (e) {
+      console.error(e);
+      return res
+        .status(500)
+        .json({ error: "Failed to unassign device for this user" });
+    }
+  }
+);
+
+export default router;

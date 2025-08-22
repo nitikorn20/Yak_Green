@@ -14,7 +14,7 @@ const router = express.Router()
 
 /**
  * @swagger
- * /api/hardware:
+ * /hardware:
  *   post:
  *     summary: Add new hardware (Super Admin Only)
  *     tags: [Hardware]
@@ -60,7 +60,7 @@ router.post('/', verifyToken, verifySuperAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/hardware:
+ * /hardware:
  *   get:
  *     summary: Get all hardware devices (Super Admin Only)
  *     tags: [Hardware]
@@ -98,7 +98,7 @@ router.get('/', verifyToken, verifySuperAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/hardware/{serialNumber}/settings:
+ * /hardware/{serialNumber}/settings:
  *   get:
  *     summary: Get all valve settings for a specific hardware
  *     tags: [Hardware]
@@ -153,7 +153,7 @@ router.get('/:serialNumber/settings', verifyToken, async (req, res) => {
 
 /**
  * @swagger
- * /api/hardware/{serialNumber}/settings/{valveId}:
+ * /hardware/{serialNumber}/settings/{valveId}:
  *   put:
  *     summary: Update a single valve setting for a specific hardware device
  *     tags: [Hardware]
@@ -247,7 +247,7 @@ router.put('/:serialNumber/settings/:valveId', verifyToken, async (req, res) => 
 
 /**
  * @swagger
- * /api/hardware/{serialNumber}:
+ * /hardware/{serialNumber}:
  *   delete:
  *     summary: Delete hardware by serial number (Super Admin Only)
  *     tags: [Hardware]

@@ -101,8 +101,8 @@ client.on("message", async (topic, message) => {
         serialNumber,
         timestamp_hw: new Date(data.timestamp * 1000),
         status_code: data.status_code,
-        valve_id: data.valve_id,
-        program_index: data.program_index,
+        valve_id: data.valve_id ?? null,
+        program_index: data.program_index ?? null,
       });
 
       if (!existingLog) {
@@ -112,8 +112,8 @@ client.on("message", async (topic, message) => {
           timestamp_hw: new Date(data.timestamp * 1000),
           status_code: data.status_code,
           detail_status: STATUS_MAP[data.status_code] || "Unknown Status", // ✅ กำหนดค่าก่อน save
-          valve_id: data.valve_id || null,
-          program_index: data.program_index || null,
+          valve_id: data.valve_id ?? null,
+          program_index: data.program_index ?? null,
         });
 
         await logEntry.save();

@@ -16,7 +16,7 @@ const router = express.Router()
 
 /**
  * @swagger
- * /api/auth/signup:
+ * /auth/signup:
  *   post:
  *     summary: Super Admin registers a new user
  *     tags: [Auth]
@@ -75,7 +75,7 @@ router.post('/signup', verifyToken, verifySuperAdmin, async (req, res) => {
 
 /**
  * @swagger
- * /api/auth/login:
+ * /auth/login:
  *   post:
  *     summary: Login user
  *     tags: [Auth]
@@ -156,7 +156,7 @@ router.post('/login', async (req, res) => {
 
 /**
  * @swagger
- * /api/auth/login-as/{id}:
+ * /auth/login-as/{id}:
  *   post:
  *     summary: Super Admin login as a user
  *     tags: [Auth]
@@ -215,7 +215,7 @@ router.post('/login-as/:id', verifyToken, verifySuperAdmin, async (req, res) => 
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /auth/reset-password:
  *   put:
  *     summary: User resets their own password
  *     tags: [Auth]
@@ -274,7 +274,7 @@ router.put('/reset-password', verifyToken, async (req, res) => {
 
 /**
  * @swagger
- * /api/auth/admin-reset-password/{id}:
+ * /auth/admin-reset-password/{id}:
  *   put:
  *     summary: Super Admin resets a user's password
  *     tags: [Auth]
