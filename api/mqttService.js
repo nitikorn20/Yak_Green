@@ -96,24 +96,39 @@ client.on("message", async (topic, message) => {
       return;
     }
 
+    // helper ใช้เช็คว่า payload มี key จริง ๆ
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
     for (const data of dataArray) {
-      const existingLog = await LogData.exists({
+      // ✅ normalize ทุก field ที่เป็นตัวเลข/เวลา
+      const ts = new Date(Number(data.timestamp) * 1000);
+      const statusCode = Number(data.status_code);
+
+      const valveId = has(data, "valve_id") ? Number(data.valve_id) : null;
+      const progIdx = has(data, "program_index")
+        ? Number(data.program_index)
+        : null;
+
+      // ✅ ใช้ค่าที่ normalize แล้วทั้งตอน exists() และตอน save()
+      const existsFilter = {
         serialNumber,
-        timestamp_hw: new Date(data.timestamp * 1000),
-        status_code: data.status_code,
-        valve_id: data.valve_id ?? null,
-        program_index: data.program_index ?? null,
-      });
+        timestamp_hw: ts,
+        status_code: statusCode,
+        valve_id: valveId,
+        program_index: progIdx,
+      };
+
+      const existingLog = await LogData.exists(existsFilter);
 
       if (!existingLog) {
         const logEntry = new LogData({
           serialNumber,
           timestamp_server: new Date(),
-          timestamp_hw: new Date(data.timestamp * 1000),
-          status_code: data.status_code,
-          detail_status: STATUS_MAP[data.status_code] || "Unknown Status", // ✅ กำหนดค่าก่อน save
-          valve_id: data.valve_id ?? null,
-          program_index: data.program_index ?? null,
+          timestamp_hw: ts,
+          status_code: statusCode,
+          detail_status: STATUS_MAP[statusCode] || "Unknown Status",
+          valve_id: valveId,
+          program_index: progIdx,
         });
 
         await logEntry.save();
